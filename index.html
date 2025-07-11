@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>TTS SuperApp - PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <link rel="icon" href="icon-192.png">
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script> <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('✅ Service Worker terdaftar:', reg.scope))
+          .catch(err => console.warn('❌ Gagal daftar Service Worker:', err));
+      });
+    }
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f9fafb; }
+    .tabs { display: flex; background: #10b981; color: white; }
+    .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; }
+    .tab.active { background: #059669; }
+    .tab-content { padding: 20px; display: none; }
+    .tab-content.active { display: block; }
+    textarea { width: 100%; height: 300px; margin-top: 10px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;}
+    select, input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+    button { background-color: #10b981; color: white; cursor: pointer; border: none; }
+    button:hover { background-color: #059669; }
+    audio { width: 100%; margin-top: 10px; }
+    #downloadLink { display: block; text-align: center; margin-top: 10px; padding: 10px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px; }
+    #downloadLink:hover { background-color: #2563eb; }
+    .history-item { background: #fff; padding: 10px; margin-bottom: 5px; border: 1px solid #eee; border-radius: 4px; position: relative;}
+    .input-type-select { margin-bottom: 10px; }
+    .textarea-container { position: relative; height: 320px; margin-top: 10px; } /* Set tinggi container agar konsisten */
+    .textarea-container textarea { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; }
+    .delete-button {
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+    .delete-button:hover { background-color: #dc2626; }
+    .control-group { margin-top: 10px; }
+    .control-group label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #333; }
+
+    /* Gaya untuk Login dan Aplikasi Utama */
+    #login-container, #app-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f9fafb;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #login-container {
+        display: none; /* Default hidden, controlled by JS */
+    }
+    #app-container {
+        display: none; /* Default hidden, controlled by JS */
+    }
+    .login-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-box h2 {
+      text-align: center;
+      color: #10b981;
+      margin-bottom: 20px;
+    }
+    .login-box input[type="email"],
+    .login-box input[type="password"] {
+      margin-bottom: 15px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .login-box button {
+      background-color: #10b981;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .login-box button:hover {
+      background-color: #059669;
+    }
+    .user-info {
+      background: #e0f2f1;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9em;
+      color: #00796b;
+      border-bottom: 1px solid #b2dfdb;
+      width: 100%; /* Ensure it spans full width of app-container's content */
+      box-sizing: border-box;
+    }
+    .user-info button {
+      width: auto;
+      padding: 5px 10px;
+      font-size: 0.8em;
+      background-color: #ef4444;
+    }
+    .user-info button:hover {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div id="login-container">
+    <div class="login-box">
+      <h2>Login ke TTS SuperApp</h2>
+      <p style="margin-bottom: 20px;">Silakan login dengan akun yang sudah didaftarkan oleh admin.</p>
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
+      <button onclick="signInWithEmail()">Login</button>
+      <p id="loginError" style="color: red; text-align: center; margin-top: 10px;"></p>
+    </div>
+  </div>
+
+  <div id="app-container">
+    <div class="user-info">
+      <span>Selamat datang, <span id="currentUserName"></span>!</span>
+      <button onclick="logout()">Logout</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('tts')">🔊 TTS</div>
+      <div class="tab" onclick="showTab('karakter')">🧮 Karakter</div>
+      <div class="tab" onclick="showTab('tagihan')">💰 Tagihan</div>
+      <div class="tab" onclick="showTab('riwayat')">📜 Riwayat</div>
+    </div>
+    <div id="tts" class="tab-content active">
+      <select id="inputType" class="input-type-select" onchange="updateTextareaVisibility()">
+        <option value="text">Teks Biasa</option>
+        <option value="ssml">SSML (Speech Synthesis Markup Language)</option>
+      </select>
+      <div class="textarea-container">
+          <textarea id="textPlain" placeholder="Ketik teks afirmasi biasa di sini..." style="display: block;"></textarea>
+          <textarea id="textSSML" placeholder="Ketik SSML Anda di sini. Contoh:
+<speak>
+  Saya <prosody volume='loud' rate='slow'>percaya penuh</prosody> pada diri sendiri.
+  <break time='0.8s'/>
+  Setiap hari, saya menjadi lebih <emphasis level='strong'>kuat</emphasis> dan <emphasis level='strong'>bijaksana</emphasis>.
+</speak>" style="display: none;"></textarea>
+          <textarea id="hiddenTextInput" style="display: none;"></textarea>
+      </div>
+
+      <div id="textControls" class="control-group">
+        <label for="speechRate">Kecepatan Bicara:</label>
+        <select id="speechRate">
+          <option value="default">Normal</option>
+          <option value="x-slow">Sangat Lambat</option>
+          <option value="slow">Lambat</option>
+          <option value="fast">Cepat</option>
+          <option value="x-fast">Sangat Cepat</option>
+        </select>
+
+        <label for="speechProsody">Konotasi (Nada & Volume):</label>
+        <select id="speechProsody">
+          <option value="default">Normal</option>
+          <option value="low-soft">Rendah & Lembut (Menenangkan)</option>
+          <option value="high-loud">Tinggi & Keras (Semangat)</option>
+          <option value="medium-loud">Sedang & Keras (Jelas)</option>
+        </select>
+      </div>
+
+      <select id="voiceType">
+        <option value="id-ID-Standard-A">Standard Pria (Gratis)</option>
+        <option value="id-ID-Standard-B">Standard Wanita (Gratis)</option>
+        <option value="id-ID-Standard-C">Standard Pria 2 (Gratis)</option>
+        <option value="id-ID-Standard-D">Standard Wanita 2 (Gratis)</option>
+        <option value="id-ID-Standard-E">Standard Wanita 3 (Gratis)</option>
+        <option value="id-ID-Standard-F">Standard Wanita 4 (Gratis)</option>
+        <option value="id-ID-Wavenet-A">Wavenet Pria (Berbayar)</option>
+        <option value="id-ID-Wavenet-B">Wavenet Wanita (Berbayar)</option>
+        <option value="id-ID-Wavenet-C">Wavenet Pria 2 (Berbayar)</option>
+        <option value="id-ID-Wavenet-D">Wavenet Wanita 2 (Berbayar)</option>
+        <option value="id-ID-Wavenet-E">Wavenet Wanita 3 (Berbayar)</option>
+      </select>
+      <input type="text" id="judul" placeholder="Judul Afirmasi">
+      <button onclick="prosesTTS()">🔊 Proses Afirmasi</button>
+      <audio id="audioPlayer" controls></audio>
+      <a id="downloadLink" download="tts.mp3" style="display: none;">⬇️ Unduh MP3</a>
+    </div>
+    <div id="karakter" class="tab-content">
+      <h3>Penggunaan Karakter</h3>
+      <p>Total karakter hari ini: <span id="karakterHariIni">0</span></p>
+      <p>Karakter input terakhir: <span id="karakterTerakhir">0</span></p>
+    </div>
+    <div id="tagihan" class="tab-content">
+      <h3>Estimasi Tagihan</h3>
+      <p>Karakter Wavenet digunakan: <span id="wavenetChar">0</span></p>
+      <p>Estimasi biaya: <span id="estimasiBiaya">Rp 0</span></p>
+    </div>
+    <div id="riwayat" class="tab-content">
+      <h3>Riwayat Afirmasi</h3>
+      <div id="riwayatList"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- KONFIGURASI PENTING ---
+    const GOOGLE_TTS_API_KEY = 'AIzaSyDhnCU4qtkE00-kX0v5Q2RyJ_xYtpsPqyI'; // API Key Google TTS Anda
+    const CLOUDINARY_CLOUD_NAME = 'dfxambd4o';
+    const CLOUDINARY_UPLOAD_PRESET = 'TTS-MP3';
+
+    // Konfigurasi Firebase Anda (Sesuai yang Anda berikan)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDl8ZdvaOhtX44HgklfOnm-yxXkAa3HiaI",
+      authDomain: "tts-tius-357ce.firebaseapp.com",
+      databaseURL: "https://tts-tius-357ce-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "tts-tius-357ce",
+      storageBucket: "tts-tius-357ce.firebasestorage.app",
+      messagingSenderId: "331883593534",
+      appId: "1:331883593534:web:17668765cddae70ddff66f"
+    };
+    // --- AKHIR KONFIGURASI PENTING ---
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth(); // Inisialisasi Firebase Auth
+
+    let currentUserId = null; // Variabel untuk menyimpan UID pengguna yang login
+    let currentUserName = 'Tamu'; // Variabel untuk menyimpan nama pengguna
+
+    const MAX_KARAKTER = 5000; // Maksimal karakter yang diizinkan (termasuk tag SSML)
+    let totalHariIni = 0;
+    let wavenetTotal = 0;
+
+    // Fungsi untuk mengubah tampilan textarea dan kontrol tambahan berdasarkan pilihan input
+    function updateTextareaVisibility() {
+      const inputType = document.getElementById('inputType').value;
+      const textPlain = document.getElementById('textPlain');
+      const textSSML = document.getElementById('textSSML');
+      const textControls = document.getElementById('textControls'); // Kontrol kecepatan/konotasi
+
+      if (inputType === 'text') {
+        textPlain.style.display = 'block';
+        textSSML.style.display = 'none';
+        textControls.style.display = 'block'; // Tampilkan kontrol untuk teks biasa
+      } else { // ssml
+        textPlain.style.display = 'none';
+        textSSML.style.display = 'block';
+        textControls.style.display = 'none'; // Sembunyikan kontrol untuk SSML
+      }
+      updateHiddenTextInput(); // Pastikan hiddenTextInput diperbarui setelah perubahan visibilitas
+    }
+
+    // Panggil saat halaman pertama kali dimuat untuk set tampilan awal
+    document.addEventListener('DOMContentLoaded', () => {
+        updateTextareaVisibility(); // Panggil fungsi saat DOMContentLoaded
+        // Tambahkan event listener untuk memantau perubahan input di kedua textarea
+        document.getElementById('textPlain').addEventListener('input', updateHiddenTextInput);
+        document.getElementById('textSSML').addEventListener('input', updateHiddenTextInput);
+    });
+
+    // Fungsi untuk memperbarui textarea tersembunyi setiap kali salah satu input berubah
+    function updateHiddenTextInput() {
+        const inputType = document.getElementById('inputType').value;
+        const textPlain = document.getElementById('textPlain');
+        const textSSML = document.getElementById('textSSML');
+        const hiddenTextInput = document.getElementById('hiddenTextInput');
+
+        if (inputType === 'text') {
+            hiddenTextInput.value = textPlain.value;
+        } else {
+            hiddenTextInput.value = textSSML.value;
+        }
+    }
+
+    // Fungsi utilitas untuk mengubah base64 menjadi Blob
+    function base64ToBlob(base64, mimeType) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: mimeType });
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('.tab[onclick*="' + tab + '"]').classList.add('active');
+      document.getElementById(tab).classList.add('active');
+      // Muat riwayat saat tab riwayat dibuka
+      if (tab === 'riwayat' && currentUserId) { // Hanya muat jika sudah login
+          loadRiwayat();
+      }
+    }
+
+    // --- Fungsi Autentikasi Email/Password ---
+    async function signInWithEmail() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const loginError = document.getElementById('loginError');
+        loginError.textContent = ''; // Bersihkan pesan error sebelumnya
+
+        if (!email || !password) {
+            loginError.textContent = 'Email dan password tidak boleh kosong.';
+            return;
+        }
+
+        try {
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            // Pengguna berhasil login, onAuthStateChanged akan menangani UI
+            console.log('Login Email/Password Berhasil:', userCredential.user.email);
+        } catch (error) {
+            console.error('Error saat login Email/Password:', error);
+            let errorMessage = 'Login gagal. Silakan cek email dan password Anda.';
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                errorMessage = 'Email atau password salah.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Format email tidak valid.';
+            }
+            loginError.textContent = errorMessage;
+        }
+    }
+
+    // Fungsi Logout
+    function logout() {
+        auth.signOut().then(() => {
+            console.log('User logged out.');
+            // onAuthStateChanged akan menangani tampilan UI setelah logout
+        }).catch((error) => {
+            console.error('Error saat logout:', error);
+            alert('Gagal logout: ' + error.message);
+        });
+    }
+
+    // Listener untuk perubahan status autentikasi
+    auth.onAuthStateChanged((user) => {
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
+        const currentUserNameSpan = document.getElementById('currentUserName');
+
+        if (user) {
+            // User is signed in.
+            currentUserId = user.uid;
+            currentUserName = user.email || 'Pengguna'; // Gunakan email sebagai nama pengguna
+            currentUserNameSpan.textContent = currentUserName;
+
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'flex'; // Tampilkan aplikasi utama
+            console.log('User logged in:', user.uid, user.email);
+            // Muat riwayat setelah login
+            loadRiwayat();
+        } else {
+            // User is signed out.
+            currentUserId = null;
+            currentUserName = 'Tamu';
+            currentUserNameSpan.textContent = currentUserName;
+
+            loginContainer.style.display = 'flex'; // Tampilkan form login
+            appContainer.style.display = 'none'; // Sembunyikan aplikasi utama
+            console.log('User logged out or not signed in.');
+            document.getElementById('loginEmail').value = ''; // Bersihkan input
+            document.getElementById('loginPassword').value = ''; // Bersihkan input
+            document.getElementById('loginError').textContent = ''; // Bersihkan pesan error
+        }
+    });
+    // --- Akhir Fungsi Autentikasi ---
+
+
+    async function prosesTTS() {
+      if (!currentUserId) {
+          alert('Anda harus login untuk memproses afirmasi.');
+          return;
+      }
+
+      const inputType = document.getElementById('inputType').value;
+      let textInput; // Akan menyimpan teks dari textarea yang sesuai (raw text/SSML)
+      let finalTextInputForAPI; // Teks yang akan dikirim ke Google TTS API (selalu SSML)
+
+      if (inputType === 'text') {
+        textInput = document.getElementById('textPlain').value.trim();
+        const speechRate = document.getElementById('speechRate').value;
+        const speechProsody = document.getElementById('speechProsody').value;
+
+        // Bangun tag <prosody> berdasarkan pilihan
+        let prosodyAttributes = [];
+        if (speechRate !== 'default') {
+            prosodyAttributes.push(`rate="${speechRate}"`);
+        }
+        if (speechProsody !== 'default') {
+            if (speechProsody === 'low-soft') {
+                prosodyAttributes.push(`pitch="low"`, `volume="soft"`);
+            } else if (speechProsody === 'high-loud') {
+                prosodyAttributes.push(`pitch="high"`, `volume="loud"`);
+            } else if (speechProsody === 'medium-loud') {
+                prosodyAttributes.push(`pitch="medium"`, `volume="loud"`);
+            }
+        }
+
+        // Penting: Escaping teks untuk SSML jika teks mengandung karakter khusus XML
+        const escapedText = textInput.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+        if (prosodyAttributes.length > 0) {
+            finalTextInputForAPI = `<speak><prosody ${prosodyAttributes.join(' ')}>${escapedText}</prosody></speak>`;
+        } else {
+            finalTextInputForAPI = `<speak>${escapedText}</speak>`; // Selalu bungkus dalam <speak>
+        }
+      } else { // ssml
+        textInput = document.getElementById('textSSML').value.trim();
+        // Validasi dasar untuk SSML (harus diawali dan diakhiri <speak>)
+        if (!textInput.startsWith('<speak>') || !textInput.endsWith('</speak>')) {
+            alert('Untuk SSML, teks harus diawali dengan "<speak>" dan diakhiri dengan "</speak>".');
+            return;
+        }
+        finalTextInputForAPI = textInput; // SSML sudah dalam format yang benar
+      }
+
+      const selectedVoice = document.getElementById('voiceType').value;
+      const judul = document.getElementById('judul').value.trim() || 'Afirmasi Tanpa Judul';
+
+      if (textInput.length === 0) { // Cek panjang teks input asli
+        alert('Teks tidak boleh kosong.');
+        return;
+      }
+      
+      // Karakter yang dihitung untuk billing adalah panjang dari SSML yang akan dikirim
+      const charCountForBilling = finalTextInputForAPI.length;
+
+      if (charCountForBilling > MAX_KARAKTER) {
+        alert(`Maksimal ${MAX_KARAKTER} karakter (termasuk tag SSML jika mode SSML). Teks Anda memiliki ${charCountForBilling} karakter.`);
+        return;
+      }
+
+      const audioPlayer = document.getElementById('audioPlayer');
+      const downloadLink = document.getElementById('downloadLink');
+      audioPlayer.src = ''; // Bersihkan audio sebelumnya
+      downloadLink.style.display = 'none'; // Sembunyikan tombol unduh
+      audioPlayer.pause();
+
+      console.log('Memproses Afirmasi... Mohon tunggu.'); // Ganti alert dengan console.log
+
+      const isWavenet = selectedVoice.includes('Wavenet');
+      let audioContentBase64 = null;
+      let cloudinaryUrl = null;
+      
+      try {
+        // 1. Panggil Google Cloud Text-to-Speech API
+        const ttsResponse = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: { ssml: finalTextInputForAPI }, // Selalu kirim sebagai SSML
+            voice: { languageCode: 'id-ID', name: selectedVoice },
+            audioConfig: { audioEncoding: 'MP3' }
+          })
+        });
+
+        const ttsData = await ttsResponse.json();
+        if (!ttsResponse.ok || !ttsData.audioContent) {
+          console.error('Error dari API Google Text-to-Speech:', ttsData);
+          alert(`Gagal memproses Afirmasi. Pastikan API Key Google TTS Anda benar, kuota tersedia, dan format ${inputType.toUpperCase()} Anda valid. Lihat console untuk detail lebih lanjut.`);
+          return;
+        }
+        audioContentBase64 = ttsData.audioContent;
+        const audioSrc = 'data:audio/mp3;base64,' + audioContentBase64;
+        audioPlayer.src = audioSrc;
+        downloadLink.href = audioSrc; // Awalnya set ke base64 untuk unduhan langsung
+        downloadLink.download = `${judul.replace(/[^a-zA-Z0-9 ]/g, '') || 'afirmasi'}.mp3`;
+        downloadLink.style.display = 'block';
+
+        // 2. Unggah ke Cloudinary
+        const audioBlob = base64ToBlob(audioContentBase64, 'audio/mpeg'); // 'audio/mpeg' for MP3
+        const formData = new FormData();
+        formData.append('file', audioBlob);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('folder', `users/${currentUserId}/afirmasi_mp3`); // Folder spesifik user
+        formData.append('public_id', `${judul.replace(/[^a-zA-Z0-9 ]/g, '_').toLowerCase().substring(0, 50)}_${Date.now()}`);
+
+        const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const cloudinaryData = await cloudinaryResponse.json();
+        if (!cloudinaryResponse.ok || !cloudinaryData.secure_url) {
+          console.warn('Gagal mengunggah ke Cloudinary, akan menggunakan data lokal:', cloudinaryData);
+          alert('Berhasil membuat afirmasi, tetapi gagal mengunggah ke Cloudinary. File dapat diunduh dari browser Anda. Cek console untuk masalah Cloudinary. Pastikan preset upload Anda benar (Unsigned) atau Anda memiliki server proxy untuk signed uploads.');
+          cloudinaryUrl = null; // Set ke null jika upload Cloudinary gagal
+        } else {
+          cloudinaryUrl = cloudinaryData.secure_url;
+          audioPlayer.src = cloudinaryUrl; // Ganti sumber audio ke URL Cloudinary
+          downloadLink.href = cloudinaryUrl; // Ganti link unduh ke URL Cloudinary
+          console.log('Afirmasi berhasil diproses dan diunggah ke Cloudinary!');
+        }
+
+        // 3. Simpan data ke Firebase Firestore
+        const recordingData = {
+          title: judul,
+          originalText: textInput, // Simpan teks asli (tanpa SSML wrapper)
+          mp3Url: cloudinaryUrl || audioSrc, // Simpan URL Cloudinary atau base64 jika gagal
+          voiceType: selectedVoice,
+          inputType: inputType, // Tambahkan jenis input (text/ssml)
+          charCount: charCountForBilling, // Karakter yang dihitung untuk billing
+          isWavenet: isWavenet,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          cloudinaryPublicId: cloudinaryData ? cloudinaryData.public_id : null // Simpan public_id untuk delete
+        };
+
+        // Simpan ke koleksi spesifik pengguna
+        await db.collection("users").doc(currentUserId).collection("afirmasiRecordings").add(recordingData);
+        console.log("Data Afirmasi berhasil disimpan ke Firebase.");
+
+        // Perbarui statistik penggunaan karakter
+        document.getElementById('karakterTerakhir').textContent = charCountForBilling; // Gunakan charCountForBilling
+        totalHariIni += charCountForBilling;
+        document.getElementById('karakterHariIni').textContent = totalHariIni;
+
+        if (isWavenet) {
+          wavenetTotal += charCountForBilling;
+        }
+        document.getElementById('wavenetChar').textContent = wavenetTotal;
+        document.getElementById('estimasiBiaya').textContent = `Rp ${(wavenetTotal / 1000000 * 250000).toLocaleString('id-ID')}`;
+
+        // Muat ulang riwayat setelah data baru disimpan
+        loadRiwayat();
+
+      } catch (error) {
+        console.error('Terjadi error saat proses Afirmasi atau upload:', error);
+        alert('Terjadi kesalahan. Cek koneksi internet, API Key, dan console untuk detail error.');
+      }
+    }
+
+    async function loadRiwayat() {
+      if (!currentUserId) {
+          console.log('Tidak ada pengguna yang login, tidak dapat memuat riwayat.');
+          document.getElementById('riwayatList').innerHTML = '<p>Silakan login untuk melihat riwayat afirmasi Anda.</p>';
+          return;
+      }
+
+      const riwayatList = document.getElementById('riwayatList');
+      riwayatList.innerHTML = 'Memuat riwayat...';
+
+      try {
+        // Ambil data dari Firebase dari koleksi spesifik pengguna
+        const snapshot = await db.collection("users").doc(currentUserId).collection("afirmasiRecordings")
+                                 .orderBy("createdAt", "desc")
+                                 .limit(20) // Batasi jumlah riwayat yang ditampilkan
+                                 .get();
+
+        if (snapshot.empty) {
+          riwayatList.innerHTML = '<p>Belum ada riwayat Afirmasi.</p>';
+          return;
+        }
+
+        riwayatList.innerHTML = ''; // Bersihkan sebelum menambahkan item baru
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const docId = doc.id; // Dapatkan ID dokumen Firebase
+
+          const riwayatEl = document.createElement('div');
+          riwayatEl.className = 'history-item';
+          const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('id-ID') : 'Tanggal tidak diketahui';
+          
+          // Tampilkan teks asli atau SSML mentah di riwayat, sesuai inputType
+          const displayedText = data.inputType === 'ssml' ? `<code>${data.originalText.substring(0, 100)}...</code>` : data.originalText.substring(0, 100) + (data.originalText.length > 100 ? '...' : '');
+
+          riwayatEl.innerHTML = `
+            <strong>${data.title}</strong> (${data.charCount} karakter)<br>
+            <small>${date} | Input: ${data.inputType.toUpperCase()} | Suara: ${data.voiceType}</small><br>
+            <p style="font-size: 0.9em; margin-top: 5px;">Teks: ${displayedText}</p>
+            <audio src="${data.mp3Url}" controls></audio>
+            <button class="delete-button" data-doc-id="${docId}" data-cloudinary-public-id="${data.cloudinaryPublicId || ''}">Hapus</button>
+          `;
+          riwayatList.appendChild(riwayatEl);
+        });
+
+        // Tambahkan event listener untuk semua tombol hapus
+        document.querySelectorAll('.delete-button').forEach(button => {
+            button.addEventListener('click', handleDelete);
+        });
+
+      } catch (error) {
+        console.error('Gagal memuat riwayat dari Firebase:', error);
+        riwayatList.innerHTML = '<p>Gagal memuat riwayat. Cek console untuk detail error.</p>';
+      }
+    }
+
+    async function handleDelete(event) {
+        if (!currentUserId) {
+            alert('Anda harus login untuk menghapus afirmasi.');
+            return;
+        }
+
+        const docId = event.target.dataset.docId;
+        const cloudinaryPublicId = event.target.dataset.cloudinaryPublicId;
+
+        if (!confirm('Anda yakin ingin menghapus afirmasi ini? Tindakan ini tidak dapat dibatalkan.')) {
+            return;
+        }
+
+        try {
+            // Hapus dari Firebase Firestore dari koleksi spesifik pengguna
+            await db.collection("users").doc(currentUserId).collection("afirmasiRecordings").doc(docId).delete();
+            console.log("Dokumen Firebase berhasil dihapus:", docId);
+
+            // Hapus dari Cloudinary (jika public_id ada dan perlu dihapus)
+            // PERHATIAN: Penghapusan dari Cloudinary secara aman memerlukan server-side!
+            if (cloudinaryPublicId) {
+                console.warn("Penghapusan dari Cloudinary memerlukan Signed Deletion (server-side). File Cloudinary mungkin masih ada. Untuk implementasi aman, gunakan Firebase Cloud Function.");
+            }
+
+            alert('Afirmasi berhasil dihapus dari riwayat!');
+            loadRiwayat(); // Muat ulang riwayat
+        } catch (error) {
+            console.error('Gagal menghapus afirmasi:', error);
+            alert('Gagal menghapus afirmasi. Cek console untuk detail error.');
+        }
+    }
+
+  </script>
+</body>
+</html>
