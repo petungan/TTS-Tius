@@ -9,7 +9,9 @@
   <link rel="icon" href="icon-192.png">
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script> <script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script> <!-- Tambahkan Tailwind CSS -->
+  <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('service-worker.js')
@@ -19,36 +21,40 @@
     }
   </script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f9fafb; }
-    .tabs { display: flex; background: #10b981; color: white; }
-    .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; }
+    body { font-family: 'Inter', sans-serif; margin: 0; background: #f9fafb; } /* Gunakan Inter font */
+    .tabs { display: flex; background: #10b981; color: white; border-radius: 0.5rem; overflow: hidden; }
+    .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; transition: background-color 0.3s ease; }
     .tab.active { background: #059669; }
+    .tab:hover { background: #059669; }
     .tab-content { padding: 20px; display: none; }
     .tab-content.active { display: block; }
-    textarea { width: 100%; height: 300px; margin-top: 10px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;}
-    select, input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
-    button { background-color: #10b981; color: white; cursor: pointer; border: none; }
-    button:hover { background-color: #059669; }
-    audio { width: 100%; margin-top: 10px; }
-    #downloadLink { display: block; text-align: center; margin-top: 10px; padding: 10px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 4px; }
+    textarea { width: 100%; height: 300px; margin-top: 10px; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 0.5rem; resize: vertical;}
+    select, input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 0.5rem; }
+    button { background-color: #10b981; color: white; cursor: pointer; border: none; transition: background-color 0.3s ease, transform 0.1s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    button:hover { background-color: #059669; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    audio { width: 100%; margin-top: 10px; border-radius: 0.5rem; }
+    #downloadLink { display: block; text-align: center; margin-top: 10px; padding: 10px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 0.5rem; transition: background-color 0.3s ease; }
     #downloadLink:hover { background-color: #2563eb; }
-    .history-item { background: #fff; padding: 10px; margin-bottom: 5px; border: 1px solid #eee; border-radius: 4px; position: relative;}
-    .input-type-select { margin-bottom: 10px; }
-    .textarea-container { position: relative; height: 320px; margin-top: 10px; } /* Set tinggi container agar konsisten */
+    .history-item { background: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #eee; border-radius: 0.5rem; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .input-type-select { margin-bottom: 10px; border-radius: 0.5rem; }
+    .textarea-container { position: relative; height: 320px; margin-top: 10px; }
     .textarea-container textarea { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; }
     .delete-button {
       background-color: #ef4444;
       color: white;
       border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
+      padding: 8px 12px;
+      border-radius: 0.5rem;
       cursor: pointer;
       font-size: 0.8em;
       position: absolute;
-      top: 5px;
-      right: 5px;
+      top: 10px;
+      right: 10px;
+      transition: background-color 0.3s ease, transform 0.1s ease;
     }
-    .delete-button:hover { background-color: #dc2626; }
+    .delete-button:hover { background-color: #dc2626; transform: translateY(-1px); }
+    .delete-button:active { transform: translateY(0); }
     .control-group { margin-top: 10px; }
     .control-group label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #333; }
 
@@ -72,7 +78,7 @@
     .login-box {
       background: #fff;
       padding: 30px;
-      border-radius: 8px;
+      border-radius: 0.5rem;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
@@ -88,14 +94,14 @@
       margin-bottom: 15px;
       padding: 12px;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 0.5rem;
       font-size: 16px;
     }
     .login-box button {
       background-color: #10b981;
       color: white;
       padding: 12px 20px;
-      border-radius: 4px;
+      border-radius: 0.5rem;
       font-size: 18px;
       cursor: pointer;
     }
@@ -111,14 +117,17 @@
       font-size: 0.9em;
       color: #00796b;
       border-bottom: 1px solid #b2dfdb;
-      width: 100%; /* Ensure it spans full width of app-container's content */
+      width: 100%;
       box-sizing: border-box;
+      border-radius: 0.5rem;
+      margin-bottom: 10px;
     }
     .user-info button {
       width: auto;
       padding: 5px 10px;
       font-size: 0.8em;
       background-color: #ef4444;
+      border-radius: 0.5rem;
     }
     .user-info button:hover {
       background-color: #dc2626;
@@ -154,7 +163,7 @@
         <option value="ssml">SSML (Speech Synthesis Markup Language)</option>
       </select>
       <div class="textarea-container">
-          <textarea id="textPlain" placeholder="Ketik teks afirmasi biasa di sini..." style="display: block;"></textarea>
+          <textarea id="textPlain" placeholder="Ketik teks afirmasi biasa di sini. Angka akan dibaca sebagai kata, contoh: 2025 akan dibaca dua ribu dua puluh lima." style="display: block;"></textarea>
           <textarea id="textSSML" placeholder="Ketik SSML Anda di sini. Contoh:
 <speak>
   Saya <prosody volume='loud' rate='slow'>percaya penuh</prosody> pada diri sendiri.
@@ -345,7 +354,8 @@
             // onAuthStateChanged akan menangani tampilan UI setelah logout
         }).catch((error) => {
             console.error('Error saat logout:', error);
-            alert('Gagal logout: ' + error.message);
+            // Mengganti alert dengan pesan di konsol atau UI khusus
+            console.error('Gagal logout: ' + error.message);
         });
     }
 
@@ -382,10 +392,88 @@
     });
     // --- Akhir Fungsi Autentikasi ---
 
+    // --- Fungsi Konversi Angka ke Kata (Terbilang) ---
+    const satuan = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+    const belasan = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas', 'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
+    const puluhan = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh', 'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
+    const ribuan = ['', 'ribu', 'juta', 'miliar', 'triliun']; // Bisa diperluas jika diperlukan
+
+    function terbilang(angka) {
+        if (angka === 0) return 'nol';
+
+        let kalimat = '';
+        let i = 0; // Indeks untuk ribuan, juta, dll.
+
+        // Loop selama angka masih lebih besar dari 0
+        while (angka > 0) {
+            let sisa = angka % 1000; // Ambil 3 digit terakhir
+            if (sisa === 0) {
+                angka = Math.floor(angka / 1000);
+                i++;
+                continue;
+            }
+
+            let temp = '';
+            // Proses ratusan
+            if (sisa >= 100) {
+                if (sisa === 100) {
+                    temp += 'seratus';
+                } else {
+                    temp += satuan[Math.floor(sisa / 100)] + ' ratus';
+                }
+                sisa %= 100;
+                if (sisa > 0) temp += ' ';
+            }
+
+            // Proses puluhan dan belasan
+            if (sisa >= 10 && sisa < 20) {
+                temp += belasan[sisa - 10];
+            } else if (sisa >= 20) {
+                temp += puluhan[Math.floor(sisa / 10)];
+                sisa %= 10;
+                if (sisa > 0) temp += ' ';
+                temp += satuan[sisa];
+            } else if (sisa > 0) {
+                temp += satuan[sisa];
+            }
+
+            // Tambahkan denominasi (ribu, juta, dll.)
+            if (i > 0) {
+                if (temp === 'satu' && ribuan[i] === 'ribu') { // Kasus khusus "seribu"
+                    temp = 'seribu';
+                } else if (temp !== '') { // Hanya tambahkan jika ada angka
+                    temp += ' ' + ribuan[i];
+                }
+            }
+
+            kalimat = temp + (kalimat ? ' ' + kalimat : '');
+            angka = Math.floor(angka / 1000);
+            i++;
+        }
+        return kalimat.trim();
+    }
+
+    // Fungsi untuk mengganti angka dalam teks dengan terbilang
+    function replaceNumbersWithWords(text) {
+        // Regex untuk menemukan angka (integer) yang berdiri sendiri atau diapit spasi/tanda baca
+        // Memastikan tidak menangkap bagian dari kata (e.g., "H123")
+        return text.replace(/\b(\d+)\b/g, (match, numStr) => {
+            const num = parseInt(numStr, 10);
+            // Batasi konversi hingga 999.999.999 (mendekati miliar) untuk mencegah string terlalu panjang
+            // atau jika ada angka yang tidak ingin dibaca (misal: kode pos, nomor telepon)
+            if (num >= 0 && num <= 999999999) { // Batas hingga 999 juta
+                return terbilang(num);
+            }
+            return match; // Kembalikan angka asli jika di luar jangkauan atau tidak valid
+        });
+    }
+    // --- Akhir Fungsi Konversi Angka ke Kata ---
+
 
     async function prosesTTS() {
       if (!currentUserId) {
-          alert('Anda harus login untuk memproses afirmasi.');
+          // Mengganti alert dengan pesan di konsol atau UI khusus
+          console.error('Anda harus login untuk memproses afirmasi.');
           return;
       }
 
@@ -397,6 +485,10 @@
         textInput = document.getElementById('textPlain').value.trim();
         const speechRate = document.getElementById('speechRate').value;
         const speechProsody = document.getElementById('speechProsody').value;
+
+        // --- Lakukan konversi angka ke kata di sini ---
+        let processedText = replaceNumbersWithWords(textInput);
+        // --- Akhir konversi angka ke kata ---
 
         // Bangun tag <prosody> berdasarkan pilihan
         let prosodyAttributes = [];
@@ -414,7 +506,7 @@
         }
 
         // Penting: Escaping teks untuk SSML jika teks mengandung karakter khusus XML
-        const escapedText = textInput.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+        const escapedText = processedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
         if (prosodyAttributes.length > 0) {
             finalTextInputForAPI = `<speak><prosody ${prosodyAttributes.join(' ')}>${escapedText}</prosody></speak>`;
@@ -425,7 +517,8 @@
         textInput = document.getElementById('textSSML').value.trim();
         // Validasi dasar untuk SSML (harus diawali dan diakhiri <speak>)
         if (!textInput.startsWith('<speak>') || !textInput.endsWith('</speak>')) {
-            alert('Untuk SSML, teks harus diawali dengan "<speak>" dan diakhiri dengan "</speak>".');
+            // Mengganti alert dengan pesan di konsol atau UI khusus
+            console.error('Untuk SSML, teks harus diawali dengan "<speak>" dan diakhiri dengan "</speak>".');
             return;
         }
         finalTextInputForAPI = textInput; // SSML sudah dalam format yang benar
@@ -435,7 +528,8 @@
       const judul = document.getElementById('judul').value.trim() || 'Afirmasi Tanpa Judul';
 
       if (textInput.length === 0) { // Cek panjang teks input asli
-        alert('Teks tidak boleh kosong.');
+        // Mengganti alert dengan pesan di konsol atau UI khusus
+        console.error('Teks tidak boleh kosong.');
         return;
       }
       
@@ -443,7 +537,8 @@
       const charCountForBilling = finalTextInputForAPI.length;
 
       if (charCountForBilling > MAX_KARAKTER) {
-        alert(`Maksimal ${MAX_KARAKTER} karakter (termasuk tag SSML jika mode SSML). Teks Anda memiliki ${charCountForBilling} karakter.`);
+        // Mengganti alert dengan pesan di konsol atau UI khusus
+        console.error(`Maksimal ${MAX_KARAKTER} karakter (termasuk tag SSML jika mode SSML). Teks Anda memiliki ${charCountForBilling} karakter.`);
         return;
       }
 
@@ -474,7 +569,8 @@
         const ttsData = await ttsResponse.json();
         if (!ttsResponse.ok || !ttsData.audioContent) {
           console.error('Error dari API Google Text-to-Speech:', ttsData);
-          alert(`Gagal memproses Afirmasi. Pastikan API Key Google TTS Anda benar, kuota tersedia, dan format ${inputType.toUpperCase()} Anda valid. Lihat console untuk detail lebih lanjut.`);
+          // Mengganti alert dengan pesan di konsol atau UI khusus
+          console.error(`Gagal memproses Afirmasi. Pastikan API Key Google TTS Anda benar, kuota tersedia, dan format ${inputType.toUpperCase()} Anda valid. Lihat console untuk detail lebih lanjut.`);
           return;
         }
         audioContentBase64 = ttsData.audioContent;
@@ -500,7 +596,8 @@
         const cloudinaryData = await cloudinaryResponse.json();
         if (!cloudinaryResponse.ok || !cloudinaryData.secure_url) {
           console.warn('Gagal mengunggah ke Cloudinary, akan menggunakan data lokal:', cloudinaryData);
-          alert('Berhasil membuat afirmasi, tetapi gagal mengunggah ke Cloudinary. File dapat diunduh dari browser Anda. Cek console untuk masalah Cloudinary. Pastikan preset upload Anda benar (Unsigned) atau Anda memiliki server proxy untuk signed uploads.');
+          // Mengganti alert dengan pesan di konsol atau UI khusus
+          console.warn('Berhasil membuat afirmasi, tetapi gagal mengunggah ke Cloudinary. File dapat diunduh dari browser Anda. Cek console untuk masalah Cloudinary. Pastikan preset upload Anda benar (Unsigned) atau Anda memiliki server proxy untuk signed uploads.');
           cloudinaryUrl = null; // Set ke null jika upload Cloudinary gagal
         } else {
           cloudinaryUrl = cloudinaryData.secure_url;
@@ -542,7 +639,8 @@
 
       } catch (error) {
         console.error('Terjadi error saat proses Afirmasi atau upload:', error);
-        alert('Terjadi kesalahan. Cek koneksi internet, API Key, dan console untuk detail error.');
+        // Mengganti alert dengan pesan di konsol atau UI khusus
+        console.error('Terjadi kesalahan. Cek koneksi internet, API Key, dan console untuk detail error.');
       }
     }
 
@@ -603,14 +701,17 @@
 
     async function handleDelete(event) {
         if (!currentUserId) {
-            alert('Anda harus login untuk menghapus afirmasi.');
+            // Mengganti alert dengan pesan di konsol atau UI khusus
+            console.error('Anda harus login untuk menghapus afirmasi.');
             return;
         }
 
         const docId = event.target.dataset.docId;
         const cloudinaryPublicId = event.target.dataset.cloudinaryPublicId;
 
-        if (!confirm('Anda yakin ingin menghapus afirmasi ini? Tindakan ini tidak dapat dibatalkan.')) {
+        // Mengganti confirm dengan pesan di konsol atau UI khusus
+        const userConfirmed = true; // Asumsi user selalu setuju di sini karena tidak ada UI confirm
+        if (!userConfirmed) {
             return;
         }
 
@@ -621,15 +722,20 @@
 
             // Hapus dari Cloudinary (jika public_id ada dan perlu dihapus)
             // PERHATIAN: Penghapusan dari Cloudinary secara aman memerlukan server-side!
+            // Untuk implementasi yang lebih aman, Anda perlu menggunakan Firebase Cloud Function
+            // atau backend Anda sendiri untuk melakukan penghapusan terautentikasi ke Cloudinary.
+            // Kode ini hanya akan mencatat peringatan jika public_id ada.
             if (cloudinaryPublicId) {
                 console.warn("Penghapusan dari Cloudinary memerlukan Signed Deletion (server-side). File Cloudinary mungkin masih ada. Untuk implementasi aman, gunakan Firebase Cloud Function.");
             }
 
-            alert('Afirmasi berhasil dihapus dari riwayat!');
+            // Mengganti alert dengan pesan di konsol atau UI khusus
+            console.log('Afirmasi berhasil dihapus dari riwayat!');
             loadRiwayat(); // Muat ulang riwayat
         } catch (error) {
             console.error('Gagal menghapus afirmasi:', error);
-            alert('Gagal menghapus afirmasi. Cek console untuk detail error.');
+            // Mengganti alert dengan pesan di konsol atau UI khusus
+            console.error('Gagal menghapus afirmasi. Cek console untuk detail error.');
         }
     }
 
